@@ -1,0 +1,12 @@
+# SYNTHETIC SAMPLE DATA - generated for this demo only.
+# All IPs use RFC 5737 / RFC 1918 documentation & private ranges - none of this
+# is from any real network, system, or organization.
+2026-07-10T02:14:31Z host=fw-edge-01 src=203.0.113.44 dst=10.20.5.12 dport=445 proto=tcp action=blocked signature="SMB anomalous inbound connection attempt"
+2026-07-10T02:15:02Z host=ids-core-02 src=10.20.5.12 dst=198.51.100.9 dport=443 proto=tcp action=allowed signature="TLS handshake to newly-seen external host"
+2026-07-10T02:31:10Z host=fw-edge-01 src=203.0.113.77 dst=10.20.5.0/24 dport=22 proto=tcp action=blocked signature="Sequential port scan across subnet, 40 hosts in 12s"
+2026-07-10T03:02:44Z host=idp-auth-01 src=10.20.7.5 dst=10.20.1.10 dport=389 proto=tcp action=allowed signature="18 failed LDAP binds followed by 1 success for user svc-backup"
+2026-07-10T03:05:12Z host=dns-resolver-01 src=10.20.5.19 dst=198.51.100.201 dport=53 proto=udp action=allowed signature="High volume of unusually long TXT record queries"
+2026-07-10T04:12:00Z host=fw-edge-01 src=10.20.5.19 dst=203.0.113.150 dport=8443 proto=tcp action=allowed signature="Outbound connection to host recently added to threat intel watchlist"
+2026-07-10T05:00:00Z host=fw-edge-01 src=192.0.2.30 dst=10.20.5.12 dport=80 proto=tcp action=blocked signature="Known scanner user-agent, single request, no follow-up"
+2026-07-10T06:40:19Z host=endpoint-av-03 src=10.20.9.44 dst=- dport=- proto=- action=quarantined signature="Generic trojan signature match on downloaded file"
+2026-07-10T07:15:55Z host=idp-auth-01 src=10.20.7.5 dst=10.20.1.10 dport=389 proto=tcp action=allowed signature="Routine successful login for user jane.ops, known device"
