@@ -1,10 +1,11 @@
 """
 Minimal multi-provider LLM client interface.
 
-Anthropic is the primary, tested backend for this project. An OpenAI-compatible
-adapter is included to show the interface generalizes, but it has not been run
-against a live OpenAI/Codex key in this repo - treat it as reference code, not
-a verified path, until someone runs it with real credentials.
+Anthropic is the primary, tested backend for this project. OpenAI and Ask Sage
+adapters are included to show the interface generalizes across both a direct
+vendor API and a DoD/DIB-facing multi-model gateway, but neither has been run
+against live credentials in this repo - treat them as reference code, not a
+verified path, until someone runs them with real accounts.
 """
 from __future__ import annotations
 
@@ -57,9 +58,58 @@ class OpenAIClient:
         )
 
 
+class AskSageClient:
+    """
+    NOT independently verified in this repo - no Ask Sage account was available
+    at build time. Included because api.asksage.ai is the actual DIB/contractor-
+    facing multi-model gateway DoD IL5/IL6 GenAI work typically runs through
+    (see https://github.com/Ask-Sage/AskSage-Open-Source-Community for the
+    public API docs this is built from) - not a guess at an interface, the
+    documented REST contract.
+    """
+
+    USER_BASE_URL = "https://api.asksage.ai/user"
+    SERVER_BASE_URL = "https://api.asksage.ai/server"
+
+    def __init__(self, model: str = "openai_gpt"):
+        import requests
+
+        self._requests = requests
+        email = os.environ.get("ASKSAGE_EMAIL")
+        api_key = os.environ.get("ASKSAGE_API_KEY")
+        if not email or not api_key:
+            raise RuntimeError("Set ASKSAGE_EMAIL and ASKSAGE_API_KEY before running this demo.")
+
+        auth = requests.post(
+            f"{self.USER_BASE_URL}/get-token-with-api-key",
+            json={"email": email, "api_key": api_key},
+        ).json()
+        token = auth.get("access_token", api_key)
+        self._headers = {"x-access-tokens": token, "Content-Type": "application/json"}
+        self.model = model
+
+    def create(self, *, system: str, messages: list[dict], max_tokens: int = 1024) -> Any:
+        message = messages[-1]["content"] if messages else ""
+        response = self._requests.post(
+            f"{self.SERVER_BASE_URL}/query",
+            headers=self._headers,
+            json={
+                "message": message,
+                "model": self.model,
+                "system_prompt": system,
+                "temperature": 0.0,
+                "dataset": "none",
+                "live": 0,
+            },
+        )
+        return response.json()  # {"message": "...", "references": [...], ...}
+
+
 def get_client(provider: str = "anthropic"):
     if provider == "anthropic":
         return AnthropicClient()
     if provider == "openai":
         return OpenAIClient()
+    if provider == "asksage":
+        return AskSageClient()
     raise ValueError(f"Unknown provider: {provider}")
