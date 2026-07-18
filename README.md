@@ -39,6 +39,38 @@ data/sample_alerts.log
   this repo - treat them as reference code until verified.
 - `triage.py` - parsing, the batched classification call, and the report.
 
+## Real-data benchmark
+
+`triage.py` above runs over hand-written synthetic log lines - good for
+showing the architecture, not a measurement. `benchmark.py` is a separate,
+additive scenario: it pulls 20 real, currently actively-exploited
+vulnerabilities from **CISA's Known Exploited Vulnerabilities (KEV)
+catalog**, and scores Claude's severity classification against the official
+CVSS v3 **baseSeverity** rating from **NIST's National Vulnerability
+Database (NVD)** - real ground truth, not something invented for this repo.
+
+**Actual measured result** (20 real CVEs, full detail in
+`benchmark_report.md`):
+
+| Metric | Result |
+|---|---|
+| Exact severity-tier match vs. real NVD CVSS | 10/20 (50%) |
+| Within one tier | 20/20 (100%) |
+
+**The interesting part isn't the 50% - it's the direction of every single
+mismatch.** Every miss was Claude rating something *more* severe than its
+official CVSS score, never less. That's explainable, not a failure: CVSS
+scores the vulnerability's technical severity in isolation, while everything
+in this sample is, by definition, already being actively exploited in the
+wild (that's what "Known Exploited Vulnerabilities" means) - a real,
+additional urgency signal that a security analyst (human or LLM) reasonably
+weighs on top of the base CVSS score. This is a genuine, known tension in
+security triage, reported honestly rather than smoothed over.
+
+```bash
+python benchmark.py
+```
+
 ## Deployment path
 
 This demo calls the Anthropic API directly. A production version for a
