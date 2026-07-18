@@ -64,7 +64,10 @@ def triage_batch(client: AnthropicClient, alerts: list[dict]) -> list[dict]:
     prompt = f"Alerts:\n{json.dumps(indexed, indent=2)}"
     response = client.create(system=SYSTEM_PROMPT, messages=[{"role": "user", "content": prompt}])
     text = "".join(b.text for b in response.content if b.type == "text")
-    return extract_json(text)
+    try:
+        return extract_json(text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"Claude's triage response wasn't valid JSON: {exc}\nRaw response:\n{text}") from exc
 
 
 def main() -> None:

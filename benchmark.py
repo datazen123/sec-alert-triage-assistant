@@ -108,7 +108,11 @@ the same order given:
         max_tokens=2048,
     )
     text = "".join(b.text for b in response.content if b.type == "text")
-    predictions = {p["cve_id"]: p["severity"].upper() for p in extract_json(text)}
+    try:
+        parsed = extract_json(text)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"Claude's severity classification wasn't valid JSON: {exc}\nRaw response:\n{text}") from exc
+    predictions = {p["cve_id"]: p["severity"].upper() for p in parsed}
 
     exact_matches = 0
     within_one_tier = 0

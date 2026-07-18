@@ -93,4 +93,27 @@ export $(grep -v '^#' .env | xargs)
 python triage.py
 ```
 
+## Tests + CI
+
+`test_triage.py` covers the deterministic log parser (field extraction,
+comment/blank-line skipping, malformed-line handling) and JSON-fence
+stripping - no API key or network needed, safe for CI on every push:
+
+```bash
+pip install -r requirements-dev.txt
+pytest -q
+```
+
+## Security notes
+
+- API keys are read from environment variables only, never hardcoded;
+  `.env` is gitignored, `.env.example` ships placeholders only.
+- Checked (2026-07-18): this repository's full git history contains zero
+  occurrences of any real API key.
+- Network calls to the Ask Sage gateway have explicit 30s timeouts.
+- A malformed/non-JSON model response now raises a clear, actionable
+  error (with the raw response attached) instead of an opaque traceback.
+- Dependencies are version-pinned with an upper bound
+  (`>=X,<NEXT_MAJOR`), not left open-ended.
+
 Built with [Claude Code](https://claude.com/claude-code).
