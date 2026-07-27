@@ -27,6 +27,7 @@ from pathlib import Path
 import requests
 
 from llm_client import AnthropicClient
+from triage import decide_escalation
 
 ROOT = Path(__file__).parent
 CODE_FENCE_RE = re.compile(r"^```[a-zA-Z]*\s*|\s*```$", re.MULTILINE)
@@ -95,11 +96,12 @@ def main() -> None:
     system_prompt = f"""You are a vulnerability severity classifier. For each
 real, currently actively-exploited vulnerability below (from CISA's Known
 Exploited Vulnerabilities catalog), classify its severity using the same
-4-tier scale as CVSS base severity: {SEVERITY_ORDER}.
+4-tier scale as CVSS base severity: {SEVERITY_ORDER}. Also report your own
+confidence in that call from 0.0 to 1.0 - be honest, a low score is fine.
 
 Reply with ONLY a JSON array (no markdown fences), one object per entry in
 the same order given:
-{{"cve_id": "...", "severity": "LOW|MEDIUM|HIGH|CRITICAL"}}"""
+{{"cve_id": "...", "severity": "LOW|MEDIUM|HIGH|CRITICAL", "confidence": <0.0-1.0>}}"""
 
     payload = [{k: v for k, v in e.items() if k != "true_severity"} for e in entries]
     response = client.create(
@@ -112,24 +114,29 @@ the same order given:
         parsed = extract_json(text)
     except json.JSONDecodeError as exc:
         raise RuntimeError(f"Claude's severity classification wasn't valid JSON: {exc}\nRaw response:\n{text}") from exc
-    predictions = {p["cve_id"]: p["severity"].upper() for p in parsed}
+    predictions = {p["cve_id"]: (p["severity"].upper(), p.get("confidence")) for p in parsed}
 
     exact_matches = 0
     within_one_tier = 0
     confusion = []
     for e in entries:
-        predicted = predictions.get(e["cve_id"])
-        true = e["true_severity"]
-        if predicted is None:
+        pred_entry = predictions.get(e["cve_id"])
+        if pred_entry is None:
             continue
+        predicted, confidence = pred_entry
+        true = e["true_severity"]
         diff = abs(SEVERITY_ORDER.index(predicted) - SEVERITY_ORDER.index(true))
         if diff == 0:
             exact_matches += 1
         if diff <= 1:
             within_one_tier += 1
-        confusion.append((e["cve_id"], true, predicted))
+        escalated, escalation_reason = decide_escalation(predicted.lower(), confidence or 0.0)
+        confusion.append((e["cve_id"], true, predicted, confidence, escalated, escalation_reason))
 
     n = len(entries)
+    misses = [c for c in confusion if c[1] != c[2]]
+    misses_caught = [c for c in misses if c[4]]
+
     report = [
         "# CISA KEV / NIST NVD Real-Data Benchmark Report (sec-alert-triage-assistant)",
         "",
@@ -137,8 +144,22 @@ the same order given:
         f"- Exact severity-tier match vs. real NVD CVSS baseSeverity: {exact_matches}/{n} ({exact_matches/n:.0%})",
         f"- Within one tier: {within_one_tier}/{n} ({within_one_tier/n:.0%})",
         "",
+        "## Escalation gate safety-net effect (measured, not claimed)",
+        "",
+        f"Of the {len(misses)} tickets Claude misclassified vs. real NVD severity, the deterministic "
+        f"escalation gate (`triage.decide_escalation` - critical severity always escalates, low "
+        f"confidence escalates) caught: **{len(misses_caught)}/{len(misses)}** "
+        f"({(len(misses_caught) / len(misses) * 100) if misses else 0:.0f}%). Recall this benchmark's "
+        f"own known bias (below): every miss is Claude rating something *more* severe than NVD, the "
+        f"safe direction for a currently-exploited CVE - so a low catch rate here isn't a safety gap in "
+        f"the way it would be for the ops-triage repo's benchmark.",
+        "",
         "## Per-CVE result (true NVD severity -> Claude's call)",
-    ] + [f"- {cve}: {true} -> {pred}" + ("  MISMATCH" if true != pred else "") for cve, true, pred in confusion]
+    ] + [
+        f"- {cve}: {true} -> {pred} (confidence={conf}, escalated={'yes - ' + reason if esc else 'no'})"
+        + ("  MISMATCH" if true != pred else "")
+        for cve, true, pred, conf, esc, reason in confusion
+    ]
 
     (ROOT / "benchmark_report.md").write_text("\n".join(report) + "\n")
     print("\n".join(report))
