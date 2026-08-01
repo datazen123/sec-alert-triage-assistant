@@ -53,27 +53,44 @@ data/sample_alerts.log
 
 ## Human-in-the-loop gate, tuned for security triage's error asymmetry
 
-Same core pattern as `claude-ops-agent` (self-reported confidence +
-deterministic escalation, not model-decided), but the actual gate logic is
-different because the cost of error isn't symmetric here the way it is for
-IT-ops ticket routing: missing a real security incident is far worse than
-an analyst spending a minute clearing a false positive. So
-`decide_escalation()` escalates **critical severity unconditionally** -
-regardless of how confident the model claims to be, a SOC shouldn't let an
-LLM auto-close its own highest-severity bucket - plus the same low-
-confidence and off-taxonomy-category triggers used elsewhere in this
-portfolio. This mirrors the same 2 DoD AI Ethical Principles cited in
-`claude-ops-agent`'s README (Traceable, Governable), applied to the specific
-risk profile of a SOC/NOC rather than copied verbatim.
+Same core pattern as `claude-ops-agent` - self-reported confidence plus a
+deterministic escalation gate, not a model-made decision. The gate logic
+itself is different here, because the cost of error isn't symmetric the
+way it is for IT-ops ticket routing.
 
-`validate_triage_response()` is the other new piece: because this repo
-sends one batched call covering every alert (not one tool-use call per item
-like `claude-ops-agent`), a malformed response risks silently corrupting or
-dropping an entire batch of alerts at once. It checks every alert got
-answered exactly once, severities/confidences are in-range, and
-high/critical severities actually got the required incident note - with one
-bounded corrective retry (same reflection pattern as the other two repos in
-this portfolio) before raising a hard, actionable error.
+Missing a real security incident is far worse than an analyst spending a
+minute clearing a false positive. So `decide_escalation()` escalates
+**critical severity unconditionally** - regardless of how confident the
+model claims to be. A **SOC** (Security Operations Center - the team that
+watches and responds to security alerts) shouldn't let an LLM auto-close
+its own highest-severity bucket.
+
+Two more triggers, same as elsewhere in this portfolio:
+
+- Low model confidence.
+
+- An **"off-taxonomy"** category - the model tagging an alert with a
+  category outside the fixed list it was given, a sign it may be
+  improvising rather than classifying.
+
+This mirrors the same 2 DoD AI Ethical Principles cited in
+`claude-ops-agent`'s README (Traceable, Governable), applied to the
+specific risk profile of a security/network operations center rather than
+copied verbatim.
+
+**`validate_triage_response()`** is the other new piece. This repo sends
+one batched call covering every alert, not one tool-use call per item
+like `claude-ops-agent` - so a malformed response risks silently
+corrupting or dropping an entire batch at once. It checks:
+
+- every alert got answered exactly once
+
+- severities/confidences are in-range
+
+- every high/critical severity actually got its required incident note
+
+One bounded corrective retry (same reflection pattern as the other repos
+in this portfolio), then a hard, actionable error if it's still wrong.
 
 ## Real-data benchmark
 
@@ -81,9 +98,10 @@ this portfolio) before raising a hard, actionable error.
 showing the architecture, not a measurement. `benchmark.py` is a separate,
 additive scenario: it pulls 20 real, currently actively-exploited
 vulnerabilities from **CISA's Known Exploited Vulnerabilities (KEV)
-catalog**, and scores Claude's severity classification against the official
-CVSS v3 **baseSeverity** rating from **NIST's National Vulnerability
-Database (NVD)** - real ground truth, not something invented for this repo.
+catalog**, and scores Claude's severity classification against the
+official CVSS v3 **baseSeverity** rating - the industry-standard "how bad
+is this vulnerability" score - from **NIST's National Vulnerability
+Database (NVD)**. Real ground truth, not something invented for this repo.
 
 **Actual measured result** (20 real CVEs, full detail in
 `benchmark_report.md`):
@@ -94,28 +112,42 @@ Database (NVD)** - real ground truth, not something invented for this repo.
 | Within one tier | 20/20 (100%) |
 | Of the 1 miss, caught by the escalation gate | 0/1 (0%) - see why below |
 
-**A number that changed between runs, reported honestly rather than
-cherry-picked.** An earlier version of this README cited 10/20 (50%) exact-
-match from an earlier live run. Re-running the identical script (same
-`RANDOM_SEED = 42`, same sampling code) now produces 19/20 (95%) - not
-because the code changed, but because CISA's KEV catalog has grown since
-the original run, so the same random seed over a longer list draws a
-different 20 CVEs. **Both numbers are real, measured results of the same
-benchmark at different points in time** - this repo doesn't quietly swap in
-whichever run looks better; a benchmark tied to a live, growing public feed
-will drift, and that's disclosed rather than hidden.
+**Why the number changed between runs**
 
-That re-run also **breaks a previously-stated pattern**: the old README
-claimed every mismatch was Claude rating something more severe than the
-official CVSS score, never less. This run's single miss
-(`CVE-2026-42897`, NVD `HIGH` -> Claude `MEDIUM`) is the opposite direction
-- an under-rate, not an over-rate. The "usually over-rates a currently-
-exploited CVE" tendency remains directionally real (it's the pattern in
-19 of 20 correct-or-over calls here), but "always" was too strong a claim
-from a 20-sample benchmark and is corrected here rather than left standing.
-Worth noting for the escalation gate specifically: that one miss carried
-confidence exactly `0.70`, the escalation threshold - it did not escalate
-only because the gate uses strict `<`, a real boundary case now on record.
+An earlier version of this README cited 10/20 (50%) exact-match from an
+earlier live run.
+
+Re-running the identical script (same `RANDOM_SEED = 42`, same sampling
+code) now produces 19/20 (95%).
+
+Not because the code changed - because CISA's KEV catalog has grown since
+the original run, so the same random seed over a longer list draws a
+different 20 CVEs.
+
+Both numbers are real, measured results of the same benchmark at
+different points in time. A benchmark tied to a live, growing public feed
+will drift - that's disclosed here, not hidden.
+
+**A claim this re-run corrected**
+
+The old README claimed every mismatch was Claude rating something more
+severe than the official CVSS score, never less.
+
+This run's single miss (`CVE-2026-42897`, NVD `HIGH` → Claude `MEDIUM`)
+is the opposite direction - an under-rate, not an over-rate.
+
+The "usually over-rates a currently-exploited CVE" tendency remains
+directionally real - it's the pattern in 19 of the 20 correct-or-over
+calls here. But "always" was too strong a claim from a 20-sample
+benchmark, corrected here rather than left standing.
+
+**A real boundary case on record**
+
+That one miss carried confidence exactly `0.70` - the escalation
+threshold.
+
+It did not escalate, because the gate uses strict `<`. A real edge case,
+not a hypothetical one.
 
 ```bash
 python benchmark.py
@@ -124,24 +156,56 @@ python benchmark.py
 ## Deployment path
 
 This demo calls the Anthropic API directly. A production version for a
-DoD-adjacent SOC/NOC would more likely run through
-**[Ask Sage](https://www.asksage.ai/)** - the IL5/IL6-authorized multi-model
-gateway built specifically for Defense Industrial Base contractors like the
-one this demo targets (`llm_client.py` includes an `AskSageClient` built from
-Ask Sage's [public API docs](https://github.com/Ask-Sage/AskSage-Open-Source-Community),
-untested pending an account) - rather than a direct-to-vendor API call.
-GenAI.mil (CDAO's platform for military/civilian personnel, currently Gemini/
-Grok/ChatGPT) is the uniformed-personnel-facing analog, not the contractor
-path.
+DoD-adjacent security/network operations center would more likely run
+through **[Ask Sage](https://www.asksage.ai/)** - the **IL5/IL6**-authorized
+(DoD Impact Level 5/6, the government's cloud-security certification
+tiers for sensitive/controlled data) multi-model gateway built
+specifically for Defense Industrial Base contractors like the one this
+demo targets (`llm_client.py` includes an `AskSageClient` built from Ask
+Sage's [public API docs](https://github.com/Ask-Sage/AskSage-Open-Source-Community),
+untested pending an account).
+
+GenAI.mil (CDAO's platform for military/civilian personnel, currently
+Gemini/Grok/ChatGPT) is the uniformed-personnel-facing analog, not the
+contractor path.
+
+## Prerequisites
+
+Python 3.9 or newer. Check with `python3 --version` before starting.
 
 ## Running it
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # fill in your own ANTHROPIC_API_KEY
 export $(grep -v '^#' .env | xargs)
 python triage.py
 ```
+
+The `python3 -m venv` step matters, not just good practice: on macOS,
+plain `pip install` can silently resolve to a leftover Python 2.7
+install instead of Python 3 - see Troubleshooting below.
+
+## Troubleshooting
+
+**`ERROR: Could not find a version that satisfies the requirement
+anthropic<1.0.0,>=0.40.0 ... (from versions: none)`, alongside a "Python
+2.7 reached end of life" warning:**
+
+Your `pip` command is resolving to a Python 2.7 installation, not Python
+3 - common on macOS, where an old Python 2.7 framework install can sit
+earlier on `PATH` than Python 3. The `anthropic` package doesn't publish
+anything for Python 2 at all, hence "no versions: none" - it's not a
+network or permissions problem.
+
+Fix: create and activate a virtual environment first, exactly as shown
+above (`python3 -m venv .venv && source .venv/bin/activate`), then run
+`pip install` again inside it. If you'd rather not use a venv, run
+`python3 -m pip install -r requirements.txt` instead of bare `pip
+install` - that forces the install through Python 3's own pip regardless
+of what `pip` alone resolves to on your system.
 
 ## Tests + CI
 
