@@ -10,6 +10,19 @@ demo. All IP addresses use IANA/RFC 5737 and RFC 1918 documentation and
 private ranges - none of this is from any real network, system, client, or
 organization.
 
+## Contents
+
+- [Why this exists](#why-this-exists)
+- [Architecture](#architecture)
+- [Human-in-the-loop gate, tuned for security triage's error asymmetry](#human-in-the-loop-gate-tuned-for-security-triages-error-asymmetry)
+- [Real-data benchmark](#real-data-benchmark)
+- [Deployment path](#deployment-path)
+- [Prerequisites](#prerequisites)
+- [Running it](#running-it)
+- [Troubleshooting](#troubleshooting)
+- [Tests + CI](#tests--ci)
+- [Security notes](#security-notes)
+
 ## Why this exists
 
 Security teams triage a high volume of alerts where most turns out to be
