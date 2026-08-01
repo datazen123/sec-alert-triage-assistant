@@ -23,6 +23,8 @@ organization.
 - [Tests + CI](#tests--ci)
 - [Security notes](#security-notes)
 
+[↑ Back to top](#sec-alert-triage-assistant)
+
 ## Why this exists
 
 Security teams triage a high volume of alerts where most turns out to be
@@ -30,6 +32,8 @@ noise, but the small number of real signals need fast, consistent first-pass
 severity judgment before a human analyst looks closer. This shows that first
 pass handled by an LLM: parse -> classify -> draft note -> hand a
 prioritized, human-reviewable list to an analyst instead of a raw firehose.
+
+[↑ Back to top](#sec-alert-triage-assistant)
 
 ## Architecture
 
@@ -63,6 +67,8 @@ data/sample_alerts.log
 - `triage.py` - parsing, the batched classification call, response
   validation with a bounded correction pass, the escalation gate, and the
   report.
+
+[↑ Back to top](#sec-alert-triage-assistant)
 
 ## Human-in-the-loop gate, tuned for security triage's error asymmetry
 
@@ -104,6 +110,8 @@ corrupting or dropping an entire batch at once. It checks:
 
 One bounded corrective retry (same reflection pattern as the other repos
 in this portfolio), then a hard, actionable error if it's still wrong.
+
+[↑ Back to top](#sec-alert-triage-assistant)
 
 ## Real-data benchmark
 
@@ -166,6 +174,8 @@ not a hypothetical one.
 python benchmark.py
 ```
 
+[↑ Back to top](#sec-alert-triage-assistant)
+
 ## Deployment path
 
 This demo calls the Anthropic API directly. A production version for a
@@ -182,9 +192,13 @@ GenAI.mil (CDAO's platform for military/civilian personnel, currently
 Gemini/Grok/ChatGPT) is the uniformed-personnel-facing analog, not the
 contractor path.
 
+[↑ Back to top](#sec-alert-triage-assistant)
+
 ## Prerequisites
 
 Python 3.9 or newer. Check with `python3 --version` before starting.
+
+[↑ Back to top](#sec-alert-triage-assistant)
 
 ## Running it
 
@@ -200,6 +214,8 @@ python triage.py
 The `python3 -m venv` step matters, not just good practice: on macOS,
 plain `pip install` can silently resolve to a leftover Python 2.7
 install instead of Python 3 - see Troubleshooting below.
+
+[↑ Back to top](#sec-alert-triage-assistant)
 
 ## Troubleshooting
 
@@ -220,6 +236,8 @@ above (`python3 -m venv .venv && source .venv/bin/activate`), then run
 install` - that forces the install through Python 3's own pip regardless
 of what `pip` alone resolves to on your system.
 
+[↑ Back to top](#sec-alert-triage-assistant)
+
 ## Tests + CI
 
 `test_triage.py` covers the deterministic log parser (field extraction,
@@ -235,6 +253,8 @@ pip install -r requirements-dev.txt
 pytest -q
 ```
 
+[↑ Back to top](#sec-alert-triage-assistant)
+
 ## Security notes
 
 - API keys are read from environment variables only, never hardcoded;
@@ -248,3 +268,5 @@ pytest -q
   (`>=X,<NEXT_MAJOR`), not left open-ended.
 
 Built with [Claude Code](https://claude.com/claude-code).
+
+[↑ Back to top](#sec-alert-triage-assistant)
