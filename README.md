@@ -15,6 +15,7 @@ organization.
 - [Why this exists](#why-this-exists)
 - [Architecture](#architecture)
 - [Human-in-the-loop gate, tuned for security triage's error asymmetry](#human-in-the-loop-gate-tuned-for-security-triages-error-asymmetry)
+- [Self-consistency check](#self-consistency-check)
 - [Real-data benchmark](#real-data-benchmark)
 - [Deployment path](#deployment-path)
 - [Prerequisites](#prerequisites)
@@ -110,6 +111,41 @@ corrupting or dropping an entire batch at once. It checks:
 
 One bounded corrective retry (same reflection pattern as the other repos
 in this portfolio), then a hard, actionable error if it's still wrong.
+
+[↑ Back to top](#sec-alert-triage-assistant)
+
+## Self-consistency check
+
+`self_consistency_check.py` applies
+[Wang, Wei, Schuurmans, Le, Chi, Narang, Chowdhery, Zhou, "Self-Consistency
+Improves Chain of Thought Reasoning in Language Models"](https://arxiv.org/abs/2203.11171)
+(ICLR 2023) to the severity-assignment call above: instead of trusting one
+sample, it calls the same batched triage prompt 3 times against the
+identical 9-alert log, then deterministically majority-votes the severity
+for each alert - code decides the consensus, not Claude. Only samples that
+pass structural validation are counted; a malformed sample is excluded
+from voting, not silently included.
+
+**Actual measured result** (3 samples, all structurally valid):
+
+**Unanimous agreement: 9/9 (100%).** Every single alert - from the
+routine known-device login (`info`, all 3 samples) to the credential
+attack (`critical`, all 3 samples) - got the identical severity call
+every time.
+
+This is a real, different result from this portfolio's other
+self-consistency checks, which mostly land well under 100% on the same
+test. Reported as measured, not smoothed to match: these firewall/IDS
+alerts have comparatively unambiguous, well-differentiated signatures
+(a port scan looks like a port scan), unlike a STIG severity rating or a
+frequency-vs-tone LMR misconfiguration, where two adjacent severity tiers
+can both be defensible readings of the same fact. Self-consistency
+testing surfaces that difference instead of assuming every classification
+task is equally ambiguous.
+
+```bash
+python self_consistency_check.py [--samples N]
+```
 
 [↑ Back to top](#sec-alert-triage-assistant)
 
@@ -246,7 +282,9 @@ every branch of `decide_escalation` (critical override, low confidence,
 off-taxonomy category, category-check skipped when absent), and every
 branch of `validate_triage_response` (missing/duplicate index, invalid
 severity, out-of-range confidence, missing required incident note) - no API
-key or network needed, safe for CI on every push:
+key or network needed, safe for CI on every push.
+`test_self_consistency_check.py` covers the majority-vote aggregation
+logic offline:
 
 ```bash
 pip install -r requirements-dev.txt

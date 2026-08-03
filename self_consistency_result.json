@@ -1,0 +1,83 @@
+{
+  "0": {
+    "severities_by_sample": [
+      "high",
+      "high",
+      "high"
+    ],
+    "consensus": "high",
+    "unanimous": true
+  },
+  "1": {
+    "severities_by_sample": [
+      "medium",
+      "medium",
+      "medium"
+    ],
+    "consensus": "medium",
+    "unanimous": true
+  },
+  "2": {
+    "severities_by_sample": [
+      "high",
+      "high",
+      "high"
+    ],
+    "consensus": "high",
+    "unanimous": true
+  },
+  "3": {
+    "severities_by_sample": [
+      "critical",
+      "critical",
+      "critical"
+    ],
+    "consensus": "critical",
+    "unanimous": true
+  },
+  "4": {
+    "severities_by_sample": [
+      "high",
+      "high",
+      "high"
+    ],
+    "consensus": "high",
+    "unanimous": true
+  },
+  "5": {
+    "severities_by_sample": [
+      "critical",
+      "critical",
+      "critical"
+    ],
+    "consensus": "critical",
+    "unanimous": true
+  },
+  "6": {
+    "severities_by_sample": [
+      "low",
+      "low",
+      "low"
+    ],
+    "consensus": "low",
+    "unanimous": true
+  },
+  "7": {
+    "severities_by_sample": [
+      "high",
+      "high",
+      "high"
+    ],
+    "consensus": "high",
+    "unanimous": true
+  },
+  "8": {
+    "severities_by_sample": [
+      "info",
+      "info",
+      "info"
+    ],
+    "consensus": "info",
+    "unanimous": true
+  }
+}
