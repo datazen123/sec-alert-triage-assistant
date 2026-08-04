@@ -106,10 +106,10 @@ the same order given:
     payload = [{k: v for k, v in e.items() if k != "true_severity"} for e in entries]
     response = client.create(
         system=system_prompt,
-        messages=[{"role": "user", "content": json.dumps(payload, indent=2)}],
+        messages=[{"role": "user", "content": json.dumps(payload, indent=2)}, {"role": "assistant", "content": "["}],
         max_tokens=2048,
     )
-    text = "".join(b.text for b in response.content if b.type == "text")
+    text = "[" + "".join(b.text for b in response.content if b.type == "text")
     try:
         parsed = extract_json(text)
     except json.JSONDecodeError as exc:

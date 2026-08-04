@@ -1,0 +1,122 @@
+{
+  "n_calls": 20,
+  "bucket_accuracy": {
+    "low (0.0-0.5)": {
+      "n": 0,
+      "accuracy": null
+    },
+    "medium (0.5-0.85)": {
+      "n": 7,
+      "accuracy": 0.42857142857142855
+    },
+    "high (0.85-1.0)": {
+      "n": 13,
+      "accuracy": 0.7692307692307693
+    }
+  },
+  "avg_confidence_correct": 0.8538461538461538,
+  "avg_confidence_incorrect": 0.8214285714285713,
+  "calibration_gap": 0.032417582417582524,
+  "calls": [
+    {
+      "cve_id": "CVE-2020-0787",
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "cve_id": "CVE-2010-3765",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "cve_id": "CVE-2026-48027",
+      "confidence": 0.95,
+      "correct": true
+    },
+    {
+      "cve_id": "CVE-2020-0688",
+      "confidence": 0.95,
+      "correct": false
+    },
+    {
+      "cve_id": "CVE-2024-29745",
+      "confidence": 0.75,
+      "correct": true
+    },
+    {
+      "cve_id": "CVE-2024-39717",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "cve_id": "CVE-2024-20481",
+      "confidence": 0.8,
+      "correct": false
+    },
+    {
+      "cve_id": "CVE-2025-48927",
+      "confidence": 0.75,
+      "correct": false
+    },
+    {
+      "cve_id": "CVE-2021-31979",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "cve_id": "CVE-2025-59287",
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "cve_id": "CVE-2021-41773",
+      "confidence": 0.95,
+      "correct": true
+    },
+    {
+      "cve_id": "CVE-2021-36948",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "cve_id": "CVE-2018-11138",
+      "confidence": 0.9,
+      "correct": true
+    },
+    {
+      "cve_id": "CVE-2025-20393",
+      "confidence": 0.95,
+      "correct": true
+    },
+    {
+      "cve_id": "CVE-2017-6740",
+      "confidence": 0.8,
+      "correct": true
+    },
+    {
+      "cve_id": "CVE-2022-27925",
+      "confidence": 0.9,
+      "correct": false
+    },
+    {
+      "cve_id": "CVE-2026-42897",
+      "confidence": 0.7,
+      "correct": false
+    },
+    {
+      "cve_id": "CVE-2010-0249",
+      "confidence": 0.85,
+      "correct": false
+    },
+    {
+      "cve_id": "CVE-2025-48633",
+      "confidence": 0.6,
+      "correct": true
+    },
+    {
+      "cve_id": "CVE-2021-41277",
+      "confidence": 0.8,
+      "correct": false
+    }
+  ]
+}

@@ -149,8 +149,13 @@ def triage_batch(client: AnthropicClient, alerts: list[dict]) -> list[dict]:
     prompt = f"Alerts:\n{json.dumps(indexed, indent=2)}"
     messages = [{"role": "user", "content": prompt}]
 
-    response = client.create(system=SYSTEM_PROMPT, messages=messages)
-    text = "".join(b.text for b in response.content if b.type == "text")
+    # Prefilling the assistant turn with the JSON's opening character is a
+    # documented Anthropic structured-output technique: it makes markdown-
+    # fence-wrapping structurally impossible for this response, rather than
+    # relying only on stripping fences after the fact. extract_json()'s
+    # fence-stripping stays in place as defense-in-depth.
+    response = client.create(system=SYSTEM_PROMPT, messages=messages + [{"role": "assistant", "content": "["}])
+    text = "[" + "".join(b.text for b in response.content if b.type == "text")
     try:
         results = extract_json(text)
     except json.JSONDecodeError as exc:
@@ -162,8 +167,8 @@ def triage_batch(client: AnthropicClient, alerts: list[dict]) -> list[dict]:
         messages.append({"role": "assistant", "content": text})
         messages.append({"role": "user", "content": CORRECTION_PROMPT_TEMPLATE.format(
             errors="\n".join(f"- {e}" for e in errors), n=len(alerts))})
-        response = client.create(system=SYSTEM_PROMPT, messages=messages)
-        text = "".join(b.text for b in response.content if b.type == "text")
+        response = client.create(system=SYSTEM_PROMPT, messages=messages + [{"role": "assistant", "content": "["}])
+        text = "[" + "".join(b.text for b in response.content if b.type == "text")
         try:
             results = extract_json(text)
         except json.JSONDecodeError as exc:
