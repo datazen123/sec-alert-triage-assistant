@@ -53,5 +53,5 @@ pytest -q
 ```
 
 Full cross-repo strategy, founder research, and environment notes live in
-the private `datazen123/securebine-portfolio-context` repo - not
-duplicated here since this repo is public.
+this portfolio's private cross-repo context repo - not duplicated here
+since this repo is public.
